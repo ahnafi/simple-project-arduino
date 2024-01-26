@@ -4,8 +4,6 @@
 #include <ESP8266HTTPClient.h>
 #include <ArduinoJson.h>
 
-
-
 // global variabel
 // wifi
 const char *ssid = "abcd";
@@ -81,13 +79,13 @@ void setup() {
   //
   WiFi.begin(ssid, pass);
   while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
     Serial.print(". ");
     lcd.setCursor(0, 0);
     lcd.print("wifi is ");
     lcd.setCursor(0, 1);
     lcd.print("not connected");
     lcd.clear();
+    delay(500);
   }
 
   // ultrasonic
