@@ -1,14 +1,16 @@
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
-#include <ESP8266WiFi.h>
-#include <ESP8266HTTPClient.h>
+// #include <ESP8266WiFi.h>
+// #include <ESP8266HTTPClient.h>
+#include <HTTPClient.h>
+#include <WiFi.h>
 #include <ArduinoJson.h>
 
 // global variabel
 // wifi
 const char *ssid = "abcd";
 const char *pass = "qwertyui";
-const String url = "http://sulthon.dion-zebua.my.id/";
+const String url = "http://192.168.63.29:3000/api/tamu";
 WiFiClient wifi;
 
 //
@@ -17,15 +19,16 @@ HTTPClient http;
 //
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 // ultrasonic
-const int echoPin = D3;
-const int trigPin = D4;
+const int echoPin = 5;
+const int trigPin = 18;
 // buzzer
-const int buzzerPin = D5;
+const int lampu = 34;
 
 // servo
 
 // sensor ultrasonic hc sr04
-long distance() {
+long distance()
+{
   digitalWrite(trigPin, LOW);
   delayMicroseconds(2);
   digitalWrite(trigPin, HIGH);
@@ -42,15 +45,17 @@ long distance() {
 }
 
 // buzzer call
-void buzzerCall() {
-  pinMode(buzzerPin, HIGH);
+void buzzerCall()
+{
+  digitalWrite(lampu, HIGH);
   delay(200);
-  pinMode(buzzerPin, LOW);
+  digitalWrite(lampu, LOW);
   delay(200);
 }
 
-//say hello
-void sayHello() {
+// say hello
+void sayHello()
+{
   lcd.setCursor(0, 0);
   lcd.print("(...WELCOME...)");
   lcd.setCursor(0, 1);
@@ -58,7 +63,8 @@ void sayHello() {
 }
 
 // hello
-void createdBy() {
+void createdBy()
+{
   lcd.setCursor(0, 0);
   lcd.print("sulthon");
   lcd.setCursor(0, 1);
@@ -66,11 +72,12 @@ void createdBy() {
 }
 
 // setup
-void setup() {
+void setup()
+{
   // serial
   Serial.begin(9600);
 
-  //lcd
+  // lcd
   lcd.init();
   lcd.begin(16, 2);
   lcd.backlight();
@@ -78,26 +85,27 @@ void setup() {
 
   //
   WiFi.begin(ssid, pass);
-  while (WiFi.status() != WL_CONNECTED) {
+  while (WiFi.status() != WL_CONNECTED)
+  {
     Serial.print(". ");
     lcd.setCursor(0, 0);
     lcd.print("wifi is ");
     lcd.setCursor(0, 1);
     lcd.print("not connected");
-    lcd.clear();
     delay(500);
   }
 
+  lcd.clear();
   // ultrasonic
   pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);
-
- 
 }
 
 // loop
-void loop() {
-  if (WiFi.status() == WL_CONNECTED) {
+void loop()
+{
+  if (WiFi.status() == WL_CONNECTED)
+  {
     //
     http.begin(wifi, url);
     http.addHeader("Content-Type", "application/json");
@@ -110,27 +118,36 @@ void loop() {
     Serial.print(distance_cm);
     Serial.println(" cm");
 
-    if (distance_cm < 50) {
+    if (distance_cm < 50)
+    {
       buzzerCall();
       sayHello();
       String payload = "{\"tamu\":\"true\"}";
       int statusCode = http.POST(payload);
-      if (statusCode > 0) {
+      if (statusCode > 0)
+      {
         Serial.println("http post success");
         String response = http.getString();
         Serial.println(response);
-      } else {
+      }
+      else
+      {
         Serial.print("HTTP POST request failed, error code: ");
         Serial.println(statusCode);
       }
-    } else {
+    }
+    else
+    {
       String payload = "{\"tamu\":\"false\"}";
       int statusCode = http.POST(payload);
-      if (statusCode > 0) {
+      if (statusCode > 0)
+      {
         Serial.println("http post success");
         String response = http.getString();
         Serial.println(response);
-      } else {
+      }
+      else
+      {
         Serial.print("HTTP POST request failed, error code: ");
         Serial.println(statusCode);
       }
