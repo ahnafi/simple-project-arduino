@@ -1,6 +1,7 @@
 #include <WiFi.h>
 #include <LiquidCrystal_I2C.h>
-#include <Servo.h>
+#include <HTTPClient.h>
+// #include <ESP32Servo.h>
 // #include <HCSR04.h>
 
 // variabel
@@ -12,10 +13,12 @@ const int yellow = 18;
 const int green = 5;
 const int trigPin = 14;
 const int echoPin = 12;
+const int touchPin = T0;
+long numberPayment = 0;
 
 // initialisasi
 LiquidCrystal_I2C lcd(0x27, 16, 2);
-Servo myservo;
+HTTPClient http;
 
 long getDistance()
 {
@@ -58,26 +61,27 @@ void printRed()
     lcd.setCursor(0, 0);
     lcd.print("hello");
     lcd.setCursor(0, 1);
-    lcd.print("hari .. tgl ..");
+    lcd.print("semangat!!");
 }
-void printYellow()
+void printYellow(long payment)
 {
-    lcd.setCursor(0, 0);
-    lcd.print("selamat datang :)");
+    lcd.setCursor(2, 0);
+    lcd.print("code payment");
     lcd.setCursor(0, 1);
-    lcd.print("silahkan bayar");
+    lcd.print("    " + payment);
 }
 void printGreen()
 {
     lcd.setCursor(0, 0);
-    lcd.print("selamat melanjutkan");
+    lcd.print("hati hati");
     lcd.setCursor(0, 1);
-    lcd.print("perjalanan");
+    lcd.print("dijalan :)");
 }
 
-void stopServo(){
-    myservo.write(90);
-    delay(15);
+long generateRandomNumber()
+{
+    // Use random() to generate a random number in the range [10000000, 99999999]
+    return random(10000000, 100000000);
 }
 
 void setup()
@@ -91,11 +95,12 @@ void setup()
     pinMode(green, OUTPUT);
     pinMode(trigPin, OUTPUT);
     pinMode(echoPin, INPUT);
-    myservo.attach(26);
     WiFi.begin(ssid, pass);
     while (WiFi.status() != WL_CONNECTED)
     {
         Serial.print(".");
+        lcd.print(".");
+        delay(15);
     }
     Serial.println("connected");
 }
@@ -104,27 +109,45 @@ void loop()
 {
     lcd.clear();
     long distance = getDistance();
-    if (distance >= 20)
-    {
-        onRedLamp();
-        printRed();
-        myservo.write(90);
-    }
-    else if (distance >= 0 && distance <= 20)
-    {
-        onYellowLamp();
-        printYellow();
-        myservo.write(30);
-        delay(2000);
-        myservo.write(90);
-        delay(2000);
-        myservo.write(0);
-        delay(2000);
-        myservo.write(90);
-        delay(2000);
+    int touch = touchRead(touchPin);
+    http.begin(url);
+    http.addHeader("Content-Type", "application/json");
 
-        
-        
+    if (touch < 15)
+    {
+        onGreenLamp();
+        printGreen();
+        numberPayment = 0; // succes pay , number payment set 0
     }
+    else
+    {
+        if (distance >= 20) // red
+        {
+            onRedLamp();
+            printRed();
+        }
+        else if (distance >= 0 && distance <= 20) // yellow
+        {
+            onYellowLamp();
+            if (numberPayment > 0)
+            {
+                printYellow(numberPayment);
+            }
+            else
+            {
+                numberPayment = generateRandomNumber();
+                printYellow(numberPayment);
+            }
+            String request = "{\"numPay\":\"" + String(numberPayment) + "\"}";
+            int statusCode = http.POST(request);
+            if (statusCode > 0)
+            {
+                Serial.print(http.getString());
+            }else{
+                Serial.println("http err");
+            }
+        }
+    }
+
     delay(1000);
 }
